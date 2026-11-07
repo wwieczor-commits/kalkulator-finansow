@@ -1,35 +1,28 @@
-# Kasa — kalkulator finansów v1.6
-Statyczna aplikacja PWA dla Wojciecha Wieczorka. Saldo początkowe, przychody i wydatki netto/brutto, VAT, włączanie pozycji, podsumowanie gotówki brutto i CSV. Dane zapisują się lokalnie.
+# Kasa — kalkulator finansów v1.7
+Statyczna PWA dla Wojciecha Wieczorka. Saldo początkowe, przychody i wydatki netto/brutto, VAT, wliczanie pozycji, podsumowanie gotówki brutto, eksport CSV i wielostronicowy PDF z polskimi znakami.
 
-Uruchomienie: `python3 -m http.server 8767`
-Testy: `python3 tests/test_app.py` (Playwright + Chromium).
+Uruchomienie: `python3 -m http.server 8767`. Można też otworzyć `index.html` przez file://: kalkulator i PDF działają lokalnie, logowanie jest wyłączone i prowadzi do adresu WWW.
 
-Kwoty: spacje, przecinek dziesiętny, tys./tyś./k/mln i dodawanie/odejmowanie. Nieobsługiwane mnożenie i dzielenie. Kropka w układzie grup tysięcy (np. 1.234) jest separatorem tysięcy; dla części dziesiętnych preferowany przecinek.
+## Synchronizacja i logowanie
+Projekt aypxpsuzobcjoiquucws; tabela public.kasa_state z RLS została wcześniej utworzona przez właściciela/rodzica. v1.7 nie zmienia bazy ani ustawień Auth. W konfiguracji jest wyłącznie publiczny publishable key. Nie wolno dodawać secret/service_role.
 
-Nie jest rozliczeniem podatkowym. VAT nie jest ponownie odejmowany od salda. Instalacja/offline wymaga pierwszego uruchomienia online; font Inter online, systemowy font awaryjny offline. Emulacja iPhone to Chromium, nie Safari.
+Przycisk Synchronizuj wysyła standardowy magic link. Kliknij „Sign in” w wiadomości; kalkulator otworzy się zalogowany. Opcjonalne wpisanie kodu jest schowane pod „Masz kod? Wpisz go” i wymaga kodu faktycznie zawartego w mailu. Nie trzeba modyfikować szablonów wiadomości ani Site URL.
 
-Aplikacja działa lokalnie i na GitHub Pages. Uruchomienie także przez bezpośrednie otwarcie index.html (file://), bez service workera. localStorage dla file:// zależy od przeglądarki.
+W Supabase Authentication → URL Configuration → Redirect URLs właściciel dodaje `https://wwieczor-commits.github.io/kalkulator-finansow/**`. Link wysyłany jest z emailRedirectTo ustawionym dokładnie na adres kalkulatora z końcowym `/`.
 
-v1.2: automatyczne grupowanie kwot podczas pisania, format po opuszczeniu pola, kompaktowe pozycje z edycją/usuwaniem i pojedynczy formularz dodawania na sekcję.
+Używany jest flowType `implicit`, detectSessionInUrl true. Pozwala to odebrać link na innym urządzeniu bez PKCE code_verifier z urządzenia wysyłającego. SDK wczytuje sesję z fragmentu URL; po zakończeniu inicjalizacji usuwamy parametry autoryzacyjne i hash (nie logujemy tokenów). Link jest jednorazowy. Sesja przechowywana jest w lokalnej pamięci przeglądarki. Zaloguj ten sam e-mail na obu urządzeniach.
 
-v1.2: formularze nad listami, najnowsze pozycje pierwsze, ciemna sekcja wydatków, czytelne wiersze i sumy sekcji.
+Na iPhonie link z Mail zwykle otwiera Safari. Sesja Safari nie jest automatycznie przenoszona do aplikacji z ekranu głównego. Najprościej po logowaniu korzystać z kalkulatora w Safari. Nie obiecujemy automatycznego zalogowania PWA ani przenoszenia tokenów między przeglądarkami.
 
-v1.3: mniejszy interfejs, kontener 1040 px, ciaśniejsze formularze i wiersze oraz niższe podsumowanie; pola mobilne mają minimum 16 px.
+Pierwsze logowanie: jeśli chmura nie ma danych (także gdy istnieje pusty wiersz), dane lokalne są wysyłane. Jeśli oba zestawy mają dane — wymagany wybór, bez cichego nadpisania. Wejście na inne konto z danymi poprzedniego konta również wymaga wyboru. Później nowszy updated_at wygrywa, przy zegarach urządzeń ustawionych automatycznie. Zapis opóźniony 800 ms, porównanie updated_at zabezpiecza równoczesne zapisy. Odświeżanie po focus/online. Offline zapis lokalny i kolejka wysyłania. Wylogowanie nie usuwa danych lokalnych; na współdzielonym urządzeniu następnie Wyczyść.
 
-v1.6: ciepłe kremowe tło, szeryfowa typografia, wspólny formularz wpisów, zielone przychody i bordowe wydatki, kompaktowe saldo w nagłówku. Testy bieżącego interfejsu: `python3 tests/test_v14.py`.
+## PDF i offline
+Lokalne jsPDF 2.5.2, AutoTable 3.8.4 i osadzone fonty DejaVu Serif/Sans. Raport ma datę Europe/Warsaw, podsumowanie, tabele z powtarzanymi nagłówkami, sekcję poza sumą i numery stron. Nie jest deklaracją podatkową. VAT nie jest ponownie odejmowany od salda gotówki. Google Fonts w interfejsie mają fonty systemowe awaryjne offline. Service worker buforuje tylko własny origin, nie API Supabase.
 
-v1.6: raport A4 PDF (jsPDF 2.5.2 + AutoTable 3.8.4), fonty DejaVu Serif/Sans z lokalnie osadzonymi polskimi znakami, podsumowanie, tabele wielostronicowe, pozycje poza sumą. Przycisk zapisuje PDF; dla przeglądarek bez atrybutu download otwiera PDF w nowej karcie. Ikony Kasa SVG/PNG i Apple touch. Testy bieżące: tests/test_v15.py.
+## Testy
+`python3 tests/test_v17.py`: HTTP i file://, iPhone 13 / laptop, działania kalkulatora i PDF.
+`python3 tests/test_sync_v17.py`: mock klienta, dwa urządzenia, wybór danych, debounced save, kolejka offline, cloud-empty safety i wyłączenie logowania file://.
+`python3 tests/test_magic_redirect.py`: prawdziwy vendored Supabase SDK + mock API, magic link w nowym kontekście bez PKCE i czyszczenie URL.
+`python3 tests/test_pdf.py`: polskie znaki, pozycje poza sumą i 8 stron przy 95 dodatkowych kosztach.
 
-Dodatki v1.6: zielona ikona portfela (Apple/PWA/maskable), znacznie niższy formularz Nowy wpis. Raport przetestowany offline przez file://, także przy 95 dodatkowych wydatkach (8 stron, powtarzane nagłówki). Safari nie testowano na rzeczywistym urządzeniu.
-
-
-## v1.6 — synchronizacja (przygotowana lokalnie, aktywacja oczekuje)
-Projekt: aypxpsuzobcjoiquucws. Wyłącznie publiczny publishable key w sync-config.js; nigdy service_role. Nie zmieniano ani nie czytano danych istniejących tabel (sprawy, settings, invoices). Nie dotykano projektu BikeRc.
-
-Proponowany nowy obiekt z RLS: docs/kasa-state-proposed.sql. SQL NIE został wykonany — wymaga zgody właściciela na dokładną zmianę. Po wykonaniu należy ponownie uruchomić security advisors i sprawdzić dostęp dwóch użytkowników. Bieżący advisor wskazuje tylko wcześniejsze wyłączone leaked password protection (nie zmieniano).
-
-Logowanie kodem e-mail: Supabase → Authentication → Email Templates → Magic Link i Confirm signup: dodaj `<p>Twój kod logowania: {{ .Token }}</p>`. Zachowaj pozostałą treść szablonów. Kod jest weryfikowany w aplikacji bez przekierowania, również przez file://. Nie trzeba zmieniać Site URL ani listy redirectów. W zależności od ograniczeń domyślnego mailera wymagane SMTP dla adresów poza zespołem projektu. Nie wysyłano prawdziwych maili ani nie tworzono kont testowych. Sesje są lokalne dla przeglądarki/origin; na iPhonie i Macu trzeba zalogować ten sam e-mail.
-
-Pierwsze logowanie przy dwóch zestawach danych wymaga wyboru; później nowszy updated_at wygrywa, nie sklejamy list. Zapisy są opóźnione 800 ms i chronione przed równoczesną zmianą przez porównanie updated_at. Offline zmiany czekają lokalnie. Zegar urządzenia wpływa na wybór nowszej wersji — urządzenia powinny mieć automatyczny czas. Wylogowanie zachowuje lokalne dane; na współdzielonym urządzeniu po wylogowaniu użyj Wyczyść. Wchodząc na inne konto, istniejące dane nie są automatycznie przesyłane.
-
-Testy: tests/test_sync.py (mock dwóch urządzeń, bez realnego API), tests/test_v16.py (UI/PDF HTTP i file://), tests/test_pdf.py. Faktyczne RLS i dostarczanie e-mail wymagają testu po aktywacji tabeli/szablonów. Wersji 1.6 nie opublikowano, aby nie udawać gotowej synchronizacji przed aktywacją backendu.
+Nie wysyłano realnych maili i nie tworzono kont testowych. Faktyczna dostarczalność maila i ustawienie Redirect URLs wymagają sprawdzenia przez właściciela. iPhone to emulacja Chromium, nie rzeczywisty Safari.
