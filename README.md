@@ -1,4 +1,4 @@
-# Kasa — kalkulator finansów v1.4
+# Kasa — kalkulator finansów v1.5
 Statyczna aplikacja PWA dla Wojciecha Wieczorka. Saldo początkowe, przychody i wydatki netto/brutto, VAT, włączanie pozycji, podsumowanie gotówki brutto i CSV. Dane zapisują się lokalnie.
 
 Uruchomienie: `python3 -m http.server 8767`
@@ -16,4 +16,8 @@ v1.2: formularze nad listami, najnowsze pozycje pierwsze, ciemna sekcja wydatkó
 
 v1.3: mniejszy interfejs, kontener 1040 px, ciaśniejsze formularze i wiersze oraz niższe podsumowanie; pola mobilne mają minimum 16 px.
 
-v1.4: ciepłe kremowe tło, szeryfowa typografia, wspólny formularz wpisów, zielone przychody i bordowe wydatki, kompaktowe saldo w nagłówku. Testy bieżącego interfejsu: `python3 tests/test_v14.py`.
+v1.5: ciepłe kremowe tło, szeryfowa typografia, wspólny formularz wpisów, zielone przychody i bordowe wydatki, kompaktowe saldo w nagłówku. Testy bieżącego interfejsu: `python3 tests/test_v14.py`.
+
+v1.5: raport A4 PDF (jsPDF 2.5.2 + AutoTable 3.8.4), fonty DejaVu Serif/Sans z lokalnie osadzonymi polskimi znakami, podsumowanie, tabele wielostronicowe, pozycje poza sumą. Przycisk zapisuje PDF; dla przeglądarek bez atrybutu download otwiera PDF w nowej karcie. Ikony Kasa SVG/PNG i Apple touch. Testy bieżące: tests/test_v15.py.
+
+Dodatki v1.5: zielona ikona portfela (Apple/PWA/maskable), znacznie niższy formularz Nowy wpis. Raport przetestowany offline przez file://, także przy 95 dodatkowych wydatkach (8 stron, powtarzane nagłówki). Safari nie testowano na rzeczywistym urządzeniu.
