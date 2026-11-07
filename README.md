@@ -21,3 +21,5 @@ v1.5: ciepłe kremowe tło, szeryfowa typografia, wspólny formularz wpisów, zi
 v1.5: raport A4 PDF (jsPDF 2.5.2 + AutoTable 3.8.4), fonty DejaVu Serif/Sans z lokalnie osadzonymi polskimi znakami, podsumowanie, tabele wielostronicowe, pozycje poza sumą. Przycisk zapisuje PDF; dla przeglądarek bez atrybutu download otwiera PDF w nowej karcie. Ikony Kasa SVG/PNG i Apple touch. Testy bieżące: tests/test_v15.py.
 
 Dodatki v1.5: zielona ikona portfela (Apple/PWA/maskable), znacznie niższy formularz Nowy wpis. Raport przetestowany offline przez file://, także przy 95 dodatkowych wydatkach (8 stron, powtarzane nagłówki). Safari nie testowano na rzeczywistym urządzeniu.
+
+v1.9: niższy, kremowy półprzezroczysty pasek podsumowania, mniejsza kwota z zielonym/bordowym kolorem; odstęp pod treścią automatycznie odpowiada wysokości paska. Bez zmian formatu danych/localStorage.
