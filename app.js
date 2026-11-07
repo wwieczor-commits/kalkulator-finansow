@@ -13,7 +13,7 @@ window.parseAmount=parseAmount;
 let state={opening:'',income:[],expense:[]};try{let stored=JSON.parse(localStorage.getItem(KEY));if(stored&&Array.isArray(stored.income)&&Array.isArray(stored.expense))state=stored}catch{}
 const $=id=>document.getElementById(id);
 function values(row){const amount=parseAmount(row.amount);if(!Number.isFinite(amount))return null;const rate=row.rate==='zw'?0:Number(row.rate)/100;let net=row.mode==='net'?amount:round(amount/(1+rate));let gross=row.mode==='gross'?amount:round(amount*(1+rate));return {net,gross,vat:round(gross-net),amount};}
-function save(){try{localStorage.setItem(KEY,JSON.stringify(state));$('status').textContent='Zapisano w tej przeglądarce'}catch{$('status').textContent='Nie można zapisać danych — eksportuj CSV.'}}
+function save(){window.dispatchEvent(new Event('kasa-local-change'));try{localStorage.setItem(KEY,JSON.stringify(state));$('status').textContent='Zapisano w tej przeglądarce'}catch{$('status').textContent='Nie można zapisać danych — eksportuj CSV.'}}
 const formatted=n=>{const [integer,decimal]=n.toFixed(2).split('.');return integer.replace(/\B(?=(\d{3})+(?!\d))/g,' ')+','+decimal};
 function formatTyping(el){
  const raw=el.value,start=el.selectionStart,end=el.selectionEnd;
