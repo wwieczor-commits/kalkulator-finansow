@@ -1,4 +1,4 @@
-# Kalkulator finansów v1.1
+# Kalkulator finansów v1.2
 Statyczna aplikacja PWA dla Wojciecha Wieczorka. Saldo początkowe, przychody i wydatki netto/brutto, VAT, włączanie pozycji, podsumowanie gotówki brutto i CSV. Dane zapisują się lokalnie.
 
 Uruchomienie: `python3 -m http.server 8767`
@@ -10,4 +10,6 @@ Nie jest rozliczeniem podatkowym. VAT nie jest ponownie odejmowany od salda. Ins
 
 Wersja lokalna: nie publikować i nie wypychać na GitHub. Uruchomienie także przez bezpośrednie otwarcie index.html (file://), bez service workera. localStorage dla file:// zależy od przeglądarki.
 
-v1.1: automatyczne grupowanie kwot podczas pisania, format po opuszczeniu pola, kompaktowe pozycje z edycją/usuwaniem i pojedynczy formularz dodawania na sekcję.
+v1.2: automatyczne grupowanie kwot podczas pisania, format po opuszczeniu pola, kompaktowe pozycje z edycją/usuwaniem i pojedynczy formularz dodawania na sekcję.
+
+v1.2: formularze nad listami, najnowsze pozycje pierwsze, ciemna sekcja wydatków, czytelne wiersze i sumy sekcji.
