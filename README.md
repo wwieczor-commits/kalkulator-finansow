@@ -25,3 +25,5 @@ Dodatki v1.5: zielona ikona portfela (Apple/PWA/maskable), znacznie niższy form
 v1.9: niższy, kremowy półprzezroczysty pasek podsumowania, mniejsza kwota z zielonym/bordowym kolorem; odstęp pod treścią automatycznie odpowiada wysokości paska. Bez zmian formatu danych/localStorage.
 
 v2.0: ciemny granatowy wygląd. Kapitał początkowy, tabele Przychody/Wydatki edytowane w wierszu (nazwa, netto, VAT, brutto; netto i brutto przeliczają się nawzajem na żywo), checkbox wliczania, przyciski „+ Dodaj”, sekcja Podsumowanie i przyklejony pasek ze stanem końcowym. Format danych localStorage bez zmian (dane z v1.9 wczytują się same). Starsze testy (v12–v19, sync) dotyczą poprzednich interfejsów; bieżące: `python3 tests/test_v20.py` i `python3 tests/test_pdf.py`.
+
+v2.1: na szerokich ekranach (≥1000 px, kontener do 1400 px) Przychody po lewej i Wydatki po prawej; kompaktowe wiersze (pola 36 px, 14 px), niższy pasek; telefon bez zmian układu (pola 42 px, 16 px). Testy: `python3 tests/test_v21.py`, `python3 tests/test_pdf.py`.
