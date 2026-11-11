@@ -23,3 +23,5 @@ v1.5: raport A4 PDF (jsPDF 2.5.2 + AutoTable 3.8.4), fonty DejaVu Serif/Sans z l
 Dodatki v1.5: zielona ikona portfela (Apple/PWA/maskable), znacznie niższy formularz Nowy wpis. Raport przetestowany offline przez file://, także przy 95 dodatkowych wydatkach (8 stron, powtarzane nagłówki). Safari nie testowano na rzeczywistym urządzeniu.
 
 v1.9: niższy, kremowy półprzezroczysty pasek podsumowania, mniejsza kwota z zielonym/bordowym kolorem; odstęp pod treścią automatycznie odpowiada wysokości paska. Bez zmian formatu danych/localStorage.
+
+v2.0: ciemny granatowy wygląd. Kapitał początkowy, tabele Przychody/Wydatki edytowane w wierszu (nazwa, netto, VAT, brutto; netto i brutto przeliczają się nawzajem na żywo), checkbox wliczania, przyciski „+ Dodaj”, sekcja Podsumowanie i przyklejony pasek ze stanem końcowym. Format danych localStorage bez zmian (dane z v1.9 wczytują się same). Starsze testy (v12–v19, sync) dotyczą poprzednich interfejsów; bieżące: `python3 tests/test_v20.py` i `python3 tests/test_pdf.py`.

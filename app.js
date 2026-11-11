@@ -28,43 +28,53 @@ function formatTyping(el){
  el.setSelectionRange(left?locate(left):0,right?locate(right):0);
 }
 function amountEvents(el,change){el.addEventListener('input',()=>{formatTyping(el);change(el.value)});el.addEventListener('blur',()=>{const n=parseAmount(el.value);if(el.value.trim()&&Number.isFinite(n)){el.value=formatted(n);change(el.value)}})}
-let editing=null,entryKind='income';
+// v2.0: inline rows. Model unchanged from v1.x: {name, amount, mode:'net'|'gross', rate, included};
+// `amount`/`mode` hold the field the user typed last, the other one is derived — so v1.9 data loads as-is.
 const blank=()=>({name:'',amount:'',mode:'gross',rate:'23',included:true});
-function makeForm(kind,row,onSave,onCancel){
- const form=document.createElement('form');form.className='card entry-form';
- form.innerHTML=`<label>Opis<input class="name" placeholder="np. ${kind==='income'?'Wynagrodzenie':'Zakupy'}"></label><div class="fields"><label>Kwota <span class="amount-mode">brutto</span><input class="amount" inputmode="text" placeholder="np. 2,5 tys."></label><label class="select-label">Wpisuję<select class="mode"><option value="gross">Brutto</option><option value="net">Netto</option></select></label><label class="select-label">Stawka VAT<select class="rate"><option value="23">23%</option><option value="8">8%</option><option value="5">5%</option><option value="0">0%</option><option value="zw">zw.</option></select></label></div><output class="computed"></output><label class="check"><input type="checkbox">Wlicz do podsumowania</label><div class="form-actions"><button type="submit">${onCancel?'Zapisz zmiany':'Dodaj pozycję'}</button>${onCancel?'<button type="button" class="cancel secondary">Anuluj</button>':''}</div>`;
- for(const prop of ['name','amount','mode','rate']){const el=form.querySelector('.'+prop);el.value=row[prop];const change=value=>{row[prop]=value;updateCard(form,row)};if(prop==='amount')amountEvents(el,change);else el.addEventListener(prop==='name'?'input':'change',()=>change(el.value))}
- const check=form.querySelector('[type=checkbox]');check.checked=row.included;check.onchange=()=>row.included=check.checked;
- if(onCancel)form.querySelector('.cancel').onclick=onCancel;
- form.onsubmit=e=>{e.preventDefault();if(!row.amount.trim()||!values(row)){form.querySelector('.amount').setAttribute('aria-invalid','true');form.querySelector('.computed').textContent='Wpisz prawidłową kwotę.';form.querySelector('.amount').focus();return}row.amount=formatted(parseAmount(row.amount));row.name=row.name.trim()||'Bez nazwy';onSave(row)};
- for(const prop of ['mode','rate']){const select=form.querySelector('.'+prop),group=document.createElement('div');group.className='pills';group.setAttribute('role','group');group.setAttribute('aria-label',prop==='mode'?'Wpisuję':'Stawka VAT');for(const option of select.options){const button=document.createElement('button');button.type='button';button.textContent=option.textContent;button.dataset.value=option.value;button.setAttribute('aria-pressed',String(option.value===select.value));button.onclick=()=>{select.value=option.value;select.dispatchEvent(new Event('change'));for(const pill of group.children)pill.setAttribute('aria-pressed',String(pill===button))};group.append(button)}select.after(group);select.hidden=true}
- const hint=document.createElement('p');hint.className='hint';hint.textContent='Odstępy same. Skróty: 540 tys, 1,5 mln.';form.querySelector('.amount').after(hint);
- form.classList.toggle('expense-form',kind==='expense');
- if(!onCancel)form.querySelector('[type=submit]').textContent=kind==='income'?'+ Dodaj przychód':'+ Dodaj wydatek';
- updateCard(form,row);return form;
+const RATES=[['23','23%'],['8','8%'],['5','5%'],['0','0%'],['zw','zw.']];
+const isBlank=row=>!String(row.name||'').trim()&&!String(row.amount||'').trim();
+window.isBlank=isBlank;
+function normalize(){state.opening=state.opening??'';for(const kind of ['income','expense'])state[kind]=state[kind].filter(r=>r&&typeof r==='object').map(r=>({name:String(r.name??''),amount:String(r.amount??''),mode:r.mode==='net'?'net':'gross',rate:RATES.some(([v])=>v===String(r.rate))?String(r.rate):'23',included:r.included!==false}))}
+normalize();
+function rowEl(kind,row){
+ const el=document.createElement('div');el.className='row'+(row.included?'':' off');
+ el.innerHTML=`<label class="chk"><input type="checkbox" aria-label="Wlicz do sumy"></label><label class="cell c-name"><span class="cl">Nazwa</span><input class="name" autocomplete="off" placeholder="Nazwa ${kind==='income'?'przychodu':'wydatku'}"></label><label class="cell c-net"><span class="cl">Netto</span><input class="net money" inputmode="decimal" autocomplete="off" placeholder="0,00"></label><label class="cell c-vat"><span class="cl">VAT</span><select class="rate">${RATES.map(([v,t])=>`<option value="${v}">${t}</option>`).join('')}</select></label><label class="cell c-gross"><span class="cl">Brutto</span><input class="gross money" inputmode="decimal" autocomplete="off" placeholder="0,00"></label><button type="button" class="del" aria-label="Usuń pozycję">×</button>`;
+ const q=s=>el.querySelector(s),name=q('.name'),net=q('.net'),gross=q('.gross'),rate=q('.rate'),check=q('[type=checkbox]');
+ name.value=row.name;rate.value=row.rate;check.checked=row.included;
+ const fill=()=>{const v=values(row),empty=!row.amount.trim(),bad=!empty&&!v;const src=row.mode==='net'?net:gross,dst=row.mode==='net'?gross:net;
+  src.setAttribute('aria-invalid',String(bad));dst.setAttribute('aria-invalid','false');
+  if(document.activeElement!==src)src.value=empty?'':(bad?row.amount:formatted(row.mode==='net'?v.net:v.gross));
+  dst.value=empty||bad?'':formatted(row.mode==='net'?v.gross:v.net)};
+ fill();
+ const changed=()=>{fill();totals();save()};
+ amountEvents(net,v=>{row.mode='net';row.amount=v;changed()});
+ amountEvents(gross,v=>{row.mode='gross';row.amount=v;changed()});
+ rate.onchange=()=>{row.rate=rate.value;changed()};
+ name.addEventListener('input',()=>{row.name=name.value;save()});
+ check.onchange=()=>{row.included=check.checked;el.classList.toggle('off',!row.included);totals();save()};
+ q('.del').onclick=()=>{const i=state[kind].indexOf(row);if(i>=0)state[kind].splice(i,1);save();render()};
+ return el;
 }
-function render(){for(const kind of ['income','expense']){
- const host=$(kind);host.replaceChildren();$(kind+'-count').textContent=state[kind].length+' wpisów';
- if(!state[kind].length){let el=document.createElement('p');el.className='empty';el.textContent='Brak pozycji. Dodaj pierwszą poniżej.';host.append(el)}
- state[kind].map((row,index)=>({row,index})).reverse().forEach(({row,index})=>{
- if(editing?.kind===kind&&editing.index===index){host.append(makeForm(kind,{...row},updated=>{state[kind][index]=updated;editing=null;save();render()},()=>{editing=null;render()}));return}
- const card=document.createElement('article');card.className='card compact'+(row.included?'':' excluded');
- card.innerHTML='<div class="row-info"><strong class="row-name"></strong><small class="row-hint"></small></div><strong class="row-amount"></strong><label class="check"><input type="checkbox">Wlicz</label><button class="edit icon secondary" aria-label="Edytuj pozycję">✎</button><button class="remove icon" aria-label="Usuń pozycję"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 6h16M9 6V3h6v3M6 6l1 15h10l1-15M10 10v7M14 10v7"/></svg></button>';
- card.prepend(card.querySelector('.check'));const v=values(row);card.querySelector('.row-name').textContent=row.name||'Bez nazwy';card.querySelector('.row-amount').textContent=v?money(v.gross):'Błędna kwota';card.querySelector('.row-hint').textContent=v?`netto ${money(v.net)} · VAT ${row.rate==='zw'?'zw.':row.rate+'%'} ${money(v.vat)}${row.included?'':' · poza sumą'}`:'Edytuj, aby poprawić kwotę';
- const check=card.querySelector('[type=checkbox]');check.checked=row.included;check.onchange=()=>{row.included=check.checked;card.classList.toggle('excluded',!row.included);save();render()};
- card.querySelector('.edit').onclick=()=>{editing={kind,index};render();host.querySelector('.entry-form .name').focus()};card.querySelector('.remove').onclick=()=>{state[kind].splice(index,1);editing=null;save();render()};host.append(card)
- });
- }totals();renderAdd()}
-function renderAdd(){if($('add-form').firstChild)return;$('add-form').append(makeForm(entryKind,blank(),row=>{state[entryKind].push(row);$('add-form').replaceChildren();save();render()}))}
-function updateCard(card,row){let v=values(row);card.querySelector('.amount-mode').textContent=row.mode==='net'?'netto':'brutto';card.querySelector('.amount').setAttribute('aria-invalid',!v);card.querySelector('.computed').textContent=!row.amount.trim()?'Wpisz kwotę — drugie ujęcie i VAT policzą się same.':v?`Odczytano: ${money(v.amount)} · Netto: ${money(v.net)} · VAT: ${money(v.vat)} · Brutto: ${money(v.gross)}`:'Nieprawidłowa kwota. Wpisz np. 12,5 tys. lub 1200+300.'}
-function totals(){let opening=parseAmount(state.opening),invalid=!Number.isFinite(opening);$('opening').setAttribute('aria-invalid',invalid);$('opening-value').textContent=invalid?'Nieprawidłowe saldo':`Odczytano: ${money(opening)}`;if(invalid)opening=0;let sums={};for(let kind of ['income','expense']){sums[kind]={net:0,gross:0,vat:0};for(let row of state[kind]){if(!row.included)continue;let v=values(row);if(!v){invalid=true;continue}for(let k of ['net','gross','vat'])sums[kind][k]=round(sums[kind][k]+v[k])}}for(const kind of ['income','expense']){let sub=$(kind+'-subtotal');if(!sub){sub=document.createElement('div');sub.id=kind+'-subtotal';sub.className='section-subtotal';$(kind).after(sub)}sub.replaceChildren();const label=document.createElement('span');label.textContent='brutto';const amount=document.createElement('strong');amount.textContent=money(sums[kind].gross);sub.append(amount,label)}$('sum-opening').textContent=money(opening);$('sum-income').textContent=money(sums.income.gross);$('sum-expense').textContent=money(sums.expense.gross);let rest=round(opening+sums.income.gross-sums.expense.gross);$('remaining').textContent=money(rest);$('remaining').style.color=rest<0?'#8b3039':'#0b5e3c';$('secondary').textContent=`Start ${money(opening)} + przychody − wydatki. Różnica netto ${money(round(sums.income.net-sums.expense.net))}. VAT do zapłaty (orientacyjnie) ${money(round(sums.income.vat-sums.expense.vat))} (należny ${money(sums.income.vat)} − naliczony ${money(sums.expense.vat)}).`;$('warning').textContent=invalid?'Uwaga: nieprawidłowe kwoty pominięto. Popraw zaznaczone pola.':'';}
-$('opening').value=state.opening;amountEvents($('opening'),value=>{state.opening=value;save();totals()});
- for(const kind of ['income','expense'])$('type-'+kind).onclick=()=>{entryKind=kind;for(const k of ['income','expense']){$('type-'+k).classList.toggle('active',k===kind);$('type-'+k).setAttribute('aria-pressed',String(k===kind))} $('add-form').replaceChildren();renderAdd()};
- $('clear').onclick=()=>{if(confirm('Usunąć wszystkie pozycje i saldo początkowe?')){state={opening:'',income:[],expense:[]};editing=null;$('opening').value='';$('add-form').replaceChildren();save();render()}};
-$('csv').onclick=()=>{const quote=x=>'"'+String(x).replace(/"/g,'""')+'"';const rows=[['Typ','Nazwa','Kwota wpisana','Rodzaj','VAT %','Wlicz','Netto PLN','VAT PLN','Brutto PLN'],['Saldo początkowe','',state.opening,'brutto','','tak','','',parseAmount(state.opening)]];for(let kind of ['income','expense'])for(let row of state[kind]){let v=values(row);rows.push([kind==='income'?'Przychód':'Wydatek',row.name,row.amount,row.mode==='net'?'netto':'brutto',row.rate,row.included?'tak':'nie',v?.net??'',v?.vat??'',v?.gross??''])}const blob=new Blob(['\ufeff'+rows.map(r=>r.map(quote).join(';')).join('\r\n')],{type:'text/csv;charset=utf-8'});const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='finanse.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)};
+function render(){for(const kind of ['income','expense']){const host=$(kind);host.replaceChildren();host.closest('.ledger').classList.toggle('is-empty',!state[kind].length);
+ if(!state[kind].length){const p=document.createElement('p');p.className='empty';p.textContent='Brak pozycji. Dodaj pierwszą poniżej.';host.append(p)}
+ for(const row of state[kind])host.append(rowEl(kind,row))}
+ const o=parseAmount(state.opening);$('opening').value=state.opening.trim()&&Number.isFinite(o)?formatted(o):state.opening;totals()}
+function totals(){
+ let opening=parseAmount(state.opening),invalid=!Number.isFinite(opening);$('opening').setAttribute('aria-invalid',String(invalid));if(invalid)opening=0;
+ const sums={};for(const kind of ['income','expense']){sums[kind]={net:0,gross:0,vat:0};for(const row of state[kind]){if(!row.included)continue;const v=values(row);if(!v){invalid=true;continue}for(const k of ['net','gross','vat'])sums[kind][k]=round(sums[kind][k]+v[k])}}
+ const rest=round(opening+sums.income.gross-sums.expense.gross);
+ $('income-sum').textContent=money(sums.income.gross);$('expense-sum').textContent=money(sums.expense.gross);
+ $('sum-income').textContent='+ '+money(sums.income.gross);$('sum-expense').textContent='– '+money(sums.expense.gross);
+ $('remaining').textContent=money(rest);$('remaining').classList.toggle('neg',rest<0);$('sum-final').classList.toggle('neg',rest<0);
+ const set=(id,n)=>$(id).textContent=money(n);set('sum-opening',opening);set('sum-income-net',sums.income.net);set('sum-expense-net',sums.expense.net);set('sum-diff-net',round(sums.income.net-sums.expense.net));set('sum-vat-in',sums.income.vat);set('sum-vat-out',sums.expense.vat);set('sum-vat',round(sums.income.vat-sums.expense.vat));set('sum-final',rest);
+ $('warning').textContent=invalid?'Uwaga: nieprawidłowe kwoty pominięto. Popraw zaznaczone pola.':'';
+}
+amountEvents($('opening'),value=>{state.opening=value;save();totals()});
+for(const kind of ['income','expense'])$('add-'+kind).onclick=()=>{state[kind].push(blank());save();render();const rows=$(kind).querySelectorAll('.row');rows[rows.length-1].querySelector('.name').focus()};
+$('clear').onclick=()=>{if(confirm('Usunąć wszystkie pozycje i kapitał początkowy?')){state={opening:'',income:[],expense:[]};save();render()}};
+$('csv').onclick=()=>{const quote=x=>'"'+String(x).replace(/"/g,'""')+'"';const rows=[['Typ','Nazwa','Kwota wpisana','Rodzaj','VAT %','Wlicz','Netto PLN','VAT PLN','Brutto PLN'],['Kapitał początkowy','',state.opening,'','','tak','','',parseAmount(state.opening)]];for(let kind of ['income','expense'])for(let row of state[kind]){if(isBlank(row))continue;let v=values(row);rows.push([kind==='income'?'Przychód':'Wydatek',row.name,row.amount,row.mode==='net'?'netto':'brutto',row.rate,row.included?'tak':'nie',v?.net??'',v?.vat??'',v?.gross??''])}const blob=new Blob(['\ufeff'+rows.map(r=>r.map(quote).join(';')).join('\r\n')],{type:'text/csv;charset=utf-8'});const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='finanse.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)};
 render();if(/^https?:$/.test(location.protocol)&&'serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js').catch(()=>{});
-
-// Keep the last entry and footer above the summary, including safe-area padding.
+// Keep the footer above the sticky bar, including safe-area padding.
 const summaryBar=document.querySelector('.summary');
 const sizeSummary=()=>document.documentElement.style.setProperty('--summary-height',Math.ceil(summaryBar.getBoundingClientRect().height)+'px');
 if('ResizeObserver' in window)new ResizeObserver(sizeSummary).observe(summaryBar);

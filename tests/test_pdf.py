@@ -14,7 +14,7 @@ with sync_playwright() as p:
  long=root/'screenshots/v15-raport-wielostronicowy.pdf';d.value.save_as(long)
  b.close()
 text=' '.join(subprocess.check_output(['pdftotext',str(sample),'-']).decode().split())
-for phrase in ['Zażółć gęślą jaźń','Saldo początkowe','Poza sumą','Planowany rower','Wojciech Wieczorek','ZOSTAŁO BRUTTO']:assert phrase in text,phrase
+for phrase in ['Zażółć gęślą jaźń','Kapitał początkowy','Poza sumą','Planowany rower','Wojciech Wieczorek','STAN KOŃCOWY']:assert phrase in text,phrase
 long_text=subprocess.check_output(['pdftotext','-layout',str(long),'-']).decode();assert long_text.count('VAT %')>=4
 subprocess.run(['pdftoppm','-f','1','-singlefile','-scale-to','1500','-png',str(sample),str(root/'screenshots/v15-raport-p1')],check=True)
 print('PASS PDF: Polish glyphs/text, excluded entries, multipage repeat headers;',pages,'pages for 95 extra rows')
